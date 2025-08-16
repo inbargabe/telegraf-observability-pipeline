@@ -1,4 +1,5 @@
 #!/bin/bash
+# scripts/install-telegraf.sh
 
 set -e
 
@@ -8,8 +9,25 @@ exec 2>&1
 
 echo "Starting Telegraf installation at $(date)"
 
+# Detect OS and install Telegraf accordingly
+if [ -f /etc/debian_version ]; then
+    # Ubuntu/Debian
+    echo "Detected Debian/Ubuntu system"
+
     # Add InfluxData repository
-cat <<EOF > /etc/yum.repos.d/influxdb.repo
+    curl -s https://repos.influxdata.com/influxdb.key | gpg --dearmor > /etc/apt/trusted.gpg.d/influxdb.gpg
+    echo "deb https://repos.influxdata.com/debian stable main" > /etc/apt/sources.list.d/influxdata.list
+
+    # Update package list and install
+    apt-get update
+    apt-get install -y telegraf awscli
+
+elif [ -f /etc/redhat-release ]; then
+    # CentOS/RHEL/Amazon Linux
+    echo "Detected RedHat/CentOS/Amazon Linux system"
+
+    # Add InfluxData repository
+    cat <<EOF > /etc/yum.repos.d/influxdb.repo
 [influxdb]
 name = InfluxDB Repository - RHEL
 baseurl = https://repos.influxdata.com/rhel/\$releasever/\$basearch/stable
@@ -18,10 +36,13 @@ gpgcheck = 1
 gpgkey = https://repos.influxdata.com/influxdb.key
 EOF
 
-# Install packages
-yum update -y
-yum install -y telegraf awscli
-
+    # Install packages
+    yum update -y
+    yum install -y telegraf awscli
+else
+    echo "Unsupported operating system"
+    exit 1
+fi
 
 # Create Telegraf configuration
 cat <<EOF > /etc/telegraf/telegraf.conf
@@ -51,6 +72,20 @@ cat <<EOF > /etc/telegraf/telegraf.conf
 
 [[inputs.disk]]
   ignore_fs = ["tmpfs", "devtmpfs", "devfs", "overlay", "aufs", "squashfs"]
+
+[[inputs.diskio]]
+
+[[inputs.kernel]]
+
+[[inputs.mem]]
+
+[[inputs.processes]]
+
+[[inputs.swap]]
+
+[[inputs.system]]
+
+[[inputs.net]]
 
 # Output plugin - AWS Kinesis
 [[outputs.kinesis]]

@@ -12,28 +12,35 @@ provider "aws" {
   region = var.aws_region
 }
 
+# Data sources
 data "aws_instance" "monitored_ec2" {
   instance_id = var.monitored_ec2_instance_id
 }
 
-locals {
-  telegraf_install_script = base64encode(templatefile("${path.module}/scripts/install-telegraf.sh", {
-    kinesis_stream_name = "${var.project_name}-metrics"
-    aws_region         = var.aws_region
-  }))
+data "aws_subnet" "monitored_ec2_subnet" {
+  id = data.aws_instance.monitored_ec2.subnet_id
 }
 
-data "aws_vpc" "monitored_ec2_vpc" {
-  id = data.aws_instance.monitored_ec2.vpc_id
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
 }
 
-# Telegraf SG
+# Security Groups
 resource "aws_security_group" "telegraf_sg" {
   name_prefix = "telegraf-sg-"
-  description = "Security group for Telegraf monitoring"
-  vpc_id      = data.aws_vpc.monitored_ec2_vpc.id
+  vpc_id      = data.aws_subnet.monitored_ec2_subnet.vpc_id
 
-  # Outbound rules for Telegraf
   egress {
     from_port   = 443
     to_port     = 443
@@ -55,6 +62,13 @@ resource "aws_security_group" "telegraf_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  egress {
+    from_port   = 8086
+    to_port     = 8086
+    protocol    = "tcp"
+    cidr_blocks = [data.aws_subnet.monitored_ec2_subnet.cidr_block]
+  }
+
   tags = {
     Name        = "telegraf-sg"
     Environment = var.environment
@@ -62,72 +76,84 @@ resource "aws_security_group" "telegraf_sg" {
   }
 }
 
-resource "aws_iam_policy" "telegraf_kinesis_policy" {
-  name        = "telegraf-kinesis-policy"
+resource "aws_security_group" "obs_sg" {
+  name_prefix = "obs-sg-"
+  vpc_id      = data.aws_subnet.monitored_ec2_subnet.vpc_id
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "kinesis:PutRecord",
-          "kinesis:PutRecords"
-        ]
-        Resource = "arn:aws:kinesis:${var.aws_region}:*:stream/telegraf-observability-metrics"
-      }
-    ]
-  })
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port       = 8086
+    to_port         = 8086
+    protocol        = "tcp"
+    security_groups = [aws_security_group.telegraf_sg.id]
+  }
+
+  ingress {
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
   tags = {
+    Name        = "obs-sg"
     Environment = var.environment
     Project     = var.project_name
   }
 }
 
-resource "aws_iam_role" "telegraf_kinesis_role" {
-  name = "telegraf-kinesis-role"
+resource "aws_instance" "obs_server" {
+  ami                    = data.aws_ami.amazon_linux.id
+  instance_type          = "t2.micro"
+  key_name              = var.key_pair_name
+  vpc_security_group_ids = [aws_security_group.obs_sg.id]
+  subnet_id             = data.aws_instance.monitored_ec2.subnet_id
 
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "ec2.amazonaws.com"
-        }
-      }
-    ]
-  })
+  user_data = base64encode(templatefile("${path.module}/scripts/install-observability-stack.sh", {
+    environment = var.environment
+  }))
 
   tags = {
+    Name        = "obs-server"
     Environment = var.environment
     Project     = var.project_name
   }
 }
 
-# Attach the policy to the role
-resource "aws_iam_role_policy_attachment" "telegraf_kinesis_attachment" {
-  role       = aws_iam_role.telegraf_kinesis_role.name
-  policy_arn = aws_iam_policy.telegraf_kinesis_policy.arn
-}
-
-resource "aws_iam_instance_profile" "telegraf_instance_profile" {
-  name = "telegraf-instance-profile"
-  role = aws_iam_role.telegraf_kinesis_role.name
+resource "aws_eip" "obs_server_eip" {
+  domain   = "vpc"
+  instance = aws_instance.obs_server.id
 
   tags = {
+    Name        = "obs-server-eip"
     Environment = var.environment
     Project     = var.project_name
   }
 }
 
+# Security Group Attachment
 resource "aws_network_interface_sg_attachment" "telegraf_sg_attachment" {
   security_group_id    = aws_security_group.telegraf_sg.id
   network_interface_id = data.aws_instance.monitored_ec2.network_interface_id
 }
 
-resource "aws_iam_instance_profile_association" "telegraf_profile_association" {
-  instance_id  = data.aws_instance.monitored_ec2.id
-  iam_instance_profile = aws_iam_instance_profile.telegraf_instance_profile.name
+# Locals for scripts
+locals {
+  telegraf_install_script = base64encode(templatefile("${path.module}/scripts/install-telegraf.sh", {
+    influxdb_server_ip = aws_instance.obs_server.private_ip
+    aws_region         = var.aws_region
+  }))
+}
