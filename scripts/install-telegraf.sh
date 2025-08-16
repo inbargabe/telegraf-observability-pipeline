@@ -9,25 +9,7 @@ exec 2>&1
 
 echo "Starting Telegraf installation at $(date)"
 
-# Detect OS and install Telegraf accordingly
-if [ -f /etc/debian_version ]; then
-    # Ubuntu/Debian
-    echo "Detected Debian/Ubuntu system"
-
-    # Add InfluxData repository
-    curl -s https://repos.influxdata.com/influxdb.key | gpg --dearmor > /etc/apt/trusted.gpg.d/influxdb.gpg
-    echo "deb https://repos.influxdata.com/debian stable main" > /etc/apt/sources.list.d/influxdata.list
-
-    # Update package list and install
-    apt-get update
-    apt-get install -y telegraf awscli
-
-elif [ -f /etc/redhat-release ]; then
-    # CentOS/RHEL/Amazon Linux
-    echo "Detected RedHat/CentOS/Amazon Linux system"
-
-    # Add InfluxData repository
-    cat <<EOF > /etc/yum.repos.d/influxdb.repo
+cat <<EOF > /etc/yum.repos.d/influxdb.repo
 [influxdb]
 name = InfluxDB Repository - RHEL
 baseurl = https://repos.influxdata.com/rhel/\$releasever/\$basearch/stable
@@ -36,13 +18,8 @@ gpgcheck = 1
 gpgkey = https://repos.influxdata.com/influxdb.key
 EOF
 
-    # Install packages
-    yum update -y
-    yum install -y telegraf awscli
-else
-    echo "Unsupported operating system"
-    exit 1
-fi
+yum update -y
+yum install -y telegraf awscli
 
 # Create Telegraf configuration
 cat <<EOF > /etc/telegraf/telegraf.conf
@@ -87,20 +64,17 @@ cat <<EOF > /etc/telegraf/telegraf.conf
 
 [[inputs.net]]
 
-# Output plugin - AWS Kinesis
-[[outputs.kinesis]]
-  region = "${aws_region}"
-  streamname = "${kinesis_stream_name}"
+[[outputs.influxdb]]
+  urls = ["http://${influxdb_server_ip}:8086"]
+  database = "telegraf"
+
+  # InfluxDB connection settings
+  timeout = "5s"
+  username = ""
+  password = ""
 
   # Data format
-  data_format = "json"
-  json_timestamp_units = "1s"
-
-  # Partitioning
-  partition_key = "host"
-
-  # Use instance profile for authentication
-  use_default_credential_provider_chain = true
+  precision = "s"
 
 EOF
 
@@ -115,3 +89,4 @@ echo "Telegraf installation completed at $(date)"
 echo "Configuration file: /etc/telegraf/telegraf.conf"
 echo "Service status: $(systemctl is-active telegraf)"
 echo "Logs: journalctl -u telegraf -f"
+echo "InfluxDB target: ${influxdb_server_ip}:8086"

@@ -5,12 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a51f4917-4078-4d3b-9a04-0846afa81536" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/scripts/install-observability-stack.sh" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.tf" beforeDir="false" afterPath="$PROJECT_DIR$/main.tf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs.tf" beforeDir="false" afterPath="$PROJECT_DIR$/outputs.tf" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/install-telegraf.sh" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/install-telegraf.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/variables.tf" beforeDir="false" afterPath="$PROJECT_DIR$/variables.tf" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -62,7 +58,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1755329497704</updated>
-      <workItem from="1755329499815" duration="4548000" />
+      <workItem from="1755329499815" duration="5649000" />
     </task>
     <servers />
   </component>
