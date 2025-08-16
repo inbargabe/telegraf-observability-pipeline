@@ -1,7 +1,7 @@
 
 # Telegraf Observability Pipeline
 
-A complete observability solution using Telegraf, AWS Kinesis, Lambda, InfluxDB, and Grafana, all provisioned with Terraform.
+A complete observability solution using Telegraf, InfluxDB, and Grafana, all provisioned with Terraform.
 
 ## Architecture
 
