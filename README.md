@@ -6,14 +6,12 @@ A complete observability solution using Telegraf, AWS Kinesis, Lambda, InfluxDB,
 ## Architecture
 
 ```
-EC2 (Telegraf) → Kinesis Stream → Lambda → InfluxDB → Grafana Dashboard
+EC2 (Telegraf) → InfluxDB → Grafana Dashboard
 ```
 
 ## Components
 
 - **Telegraf**: Collects system metrics from EC2 instance
-- **Kinesis Stream**: Handles metric data streaming
-- **Lambda**: Processes and forwards metrics to InfluxDB
 - **InfluxDB**: Time-series database for metric storage
 - **Grafana**: Visualization and monitoring dashboard
 
@@ -28,9 +26,7 @@ EC2 (Telegraf) → Kinesis Stream → Lambda → InfluxDB → Grafana Dashboard
 1. **Setup Terraform and Git** ✅
 2. Install Telegraf on existing EC2
 3. Configure EC2 security groups and IAM policies
-4. Create Kinesis stream with alerts
-5. Create Lambda function for metric forwarding
-6. Deploy InfluxDB and Grafana on new EC2
+6. Deploy InfluxDB and Grafana on another EC2
 7. Configure IAM roles and policies
 8. Setup Grafana dashboard
 
