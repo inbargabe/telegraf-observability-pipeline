@@ -35,8 +35,8 @@ EC2 (Telegraf) → InfluxDB → Grafana Dashboard
 
 ```
 .
-├── main.tf              # Main Terraform configuration
-├── variables.tf         # Variable definitions
+├── main.tf             # Main Terraform configuration
+├── variables.tf        # Variable definitions
 ├── outputs.tf          # Output definitions
 ├── modules/            # Terraform modules (created as needed)
 └── README.md           # This file
