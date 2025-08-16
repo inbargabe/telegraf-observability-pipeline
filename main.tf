@@ -18,7 +18,7 @@ data "aws_instance" "monitored_ec2" {
 
 locals {
   telegraf_install_script = base64encode(templatefile("${path.module}/scripts/install-telegraf.sh", {
-    kinesis_stream_name = "${var.project_name}-${var.environment}-metrics"
+    kinesis_stream_name = "${var.project_name}-metrics"
     aws_region         = var.aws_region
   }))
 }
