@@ -23,8 +23,8 @@ EC2 (Telegraf) → InfluxDB → Grafana Dashboard
 
 ## Deployment Steps
 
-1. **Setup Terraform and Git** ✅
-2. Install Telegraf on existing EC2
+1. Setup Terraform and Git
+2. Install Telegraf on EC2
 3. Configure EC2 security groups and IAM policies
 6. Deploy InfluxDB and Grafana on another EC2
 7. Configure IAM roles and policies
