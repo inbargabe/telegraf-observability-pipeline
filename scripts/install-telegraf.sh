@@ -3,11 +3,8 @@
 
 set -e
 
-# Log everything
 exec > >(tee /var/log/telegraf-install.log)
 exec 2>&1
-
-echo "Starting Telegraf installation at $(date)"
 
 cat <<EOF > /etc/yum.repos.d/influxdb.repo
 [influxdb]
@@ -21,7 +18,7 @@ EOF
 yum update -y
 yum install -y telegraf awscli
 
-# Create Telegraf configuration
+# Basic telegraf configuration
 cat <<EOF > /etc/telegraf/telegraf.conf
 # Global settings
 [global_tags]

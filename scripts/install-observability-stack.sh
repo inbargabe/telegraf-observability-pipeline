@@ -1,18 +1,16 @@
 #!/bin/bash
 # scripts/install-observability-stack.sh
 
+
+### BEFORE RUNNING THE SCRIPT - Add an Environmet variable on the machine with the following:
+# GRAFANA_ADMIN_PASSWORD=<desired password>
 set -e
 
-# Log everything
 exec > >(tee /var/log/observability-install.log)
 exec 2>&1
 
-echo "Starting InfluxDB and Grafana installation at $(date)"
-
-# Update system
 yum update -y
 
-# Install required packages
 yum install -y wget curl
 
 # Install InfluxDB
@@ -91,7 +89,7 @@ domain = localhost
 
 [security]
 admin_user = admin
-admin_password = admin123
+admin_password = $GRAFANA_ADMIN_PASSWORD
 
 [database]
 type = sqlite3
@@ -149,7 +147,6 @@ echo "Installation completed at $(date)"
 echo "============================================"
 echo "InfluxDB URL: http://$PUBLIC_IP:8086"
 echo "Grafana URL: http://$PUBLIC_IP:3000"
-echo "Grafana Login: admin / admin123"
 echo "InfluxDB Database: telegraf"
 echo "============================================"
 echo "Logs:"
